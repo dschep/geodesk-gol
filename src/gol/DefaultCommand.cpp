@@ -46,6 +46,7 @@ void DefaultCommand::help()
     help.beginSection("Commands:\n");
     help.subCommand("build", "Create a GOL from an OSM data file");
     help.subCommand("query", "Perform a GOQL query");
+    help.subCommand("server", "Serve an HTTP API");
     help.subCommand("map", "Display features on a map");
     help.subCommand("info", "Obtain metadata and statistics");
 #ifdef GOL_EXPERIMENTAL
