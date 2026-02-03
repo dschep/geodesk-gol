@@ -17,6 +17,8 @@
 #include <cstdio>
 #include <mutex>
 #include <iostream>
+#include <unistd.h>
+#include <thread>
 
 using namespace clarisma;
 using namespace geodesk;
@@ -89,17 +91,24 @@ int ServerCommand::run(char* argv[])
             return;
         }
 
-        FILE* tempOut = std::tmpfile();
-        if(!tempOut) {
+        int pipefd[2];
+        if (pipe(pipefd) == -1) {
             res.status = 500;
             res.set_content("Internal Server Error", "text/plain");
             return;
         }
-        int fd = fileno(tempOut);
-        
-        // Save stdout? We assume stdout is fd 1.
-        // We set Console output to temp file.
-        Console::setOutputFile(fd);
+
+        std::string body;
+        std::thread reader([&]() {
+            char buffer[4096];
+            ssize_t n;
+            while ((n = read(pipefd[0], buffer, sizeof(buffer))) > 0) {
+                body.append(buffer, n);
+            }
+            close(pipefd[0]);
+        });
+
+        Console::setOutputFile(pipefd[1]);
         
         try {
             Box bounds = Box::ofWorld();
@@ -135,29 +144,23 @@ int ServerCommand::run(char* argv[])
             }
         } catch (const std::exception& ex) {
             Console::setOutputFile(1); // Restore stdout
+            close(pipefd[1]);
+            reader.join();
             res.status = 400;
             res.set_content(ex.what(), "text/plain");
-            fclose(tempOut);
             return;
         } catch (...) {
             Console::setOutputFile(1); // Restore stdout
+            close(pipefd[1]);
+            reader.join();
             res.status = 500;
             res.set_content("Unknown error", "text/plain");
-            fclose(tempOut);
             return;
         }
 
         Console::setOutputFile(1); // Restore stdout
-
-        fseek(tempOut, 0, SEEK_END);
-        long size = ftell(tempOut);
-        rewind(tempOut);
-        std::string body;
-        body.resize(size);
-        if (size > 0) {
-            fread(&body[0], 1, size, tempOut);
-        }
-        fclose(tempOut);
+        close(pipefd[1]);
+        reader.join();
 
         std::string contentType = "text/plain";
         if (format == OutputFormat::GEOJSON || format == OutputFormat::GEOJSONL) contentType = "application/json";
