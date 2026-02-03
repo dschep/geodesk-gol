@@ -16,6 +16,7 @@
 #include "MapCommand.h"
 #include "QueryCommand.h"
 #include "SaveCommand.h"
+#include "ServerCommand.h"
 #include "UpdateCommand.h"
 #include "TestCommand.h"
 
@@ -44,6 +45,7 @@ int GolTool::run(char* argv[])
 		{ "load", &GolTool::load },
 		{ "map", &GolTool::map },
 		{ "save", &GolTool::save },
+		{ "server", &GolTool::server },
 #ifdef GOL_EXPERIMENTAL
 		{ "update", &GolTool::update }
 #endif
@@ -137,6 +139,11 @@ int GolTool::query(char* argv[])
 int GolTool::save(char* argv[])
 {
 	return SaveCommand().run(argv);
+}
+
+int GolTool::server(char* argv[])
+{
+	return ServerCommand().run(argv);
 }
 
 #ifdef GOL_EXPERIMENTAL
