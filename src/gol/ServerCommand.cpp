@@ -25,9 +25,10 @@ ServerCommand::ServerCommand()
 {
     Option options[] = {
         { "port", OPTION_METHOD(&ServerCommand::setPort) },
-        { "p", OPTION_METHOD(&ServerCommand::setPort) }
+        { "p", OPTION_METHOD(&ServerCommand::setPort) },
+        { "cors", OPTION_METHOD(&ServerCommand::setCors) }
     };
-    addOptions(options, 2);
+    addOptions(options, 3);
 }
 
 int ServerCommand::setPort(std::string_view value)
@@ -37,6 +38,12 @@ int ServerCommand::setPort(std::string_view value)
     } catch (...) {
         return 0; 
     }
+    return 1;
+}
+
+int ServerCommand::setCors(std::string_view value)
+{
+    corsAllowedOrigins_ = value;
     return 1;
 }
 
@@ -66,6 +73,9 @@ int ServerCommand::run(char* argv[])
 
     svr.Get("/", [&](const httplib::Request& req, httplib::Response& res) {
         std::lock_guard<std::mutex> lock(mutex);
+
+        res.set_header("Access-Control-Allow-Origin", corsAllowedOrigins_);
+        res.set_header("Access-Control-Allow-Methods", "GET");
 
         std::string query = req.get_param_value("query");
         std::string formatStr = req.get_param_value("format");

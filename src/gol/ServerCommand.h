@@ -13,7 +13,9 @@ public:
 
 private:
     int port_ = 8000;
+    std::string corsAllowedOrigins_ = "*";
 
     int setPort(std::string_view value);
+    int setCors(std::string_view value);
     static OutputFormat parseFormat(std::string_view s);
 };
